@@ -6,7 +6,7 @@
 #include <linux/uaccess.h>
 #include <linux/cdev.h>
 
-MODULE_LICENSE("WTFPL");
+MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Proc Dev");
 MODULE_DESCRIPTION("A char driver");
 MODULE_VERSION("0.1");
@@ -15,13 +15,14 @@ MODULE_VERSION("0.1");
 
 static struct proc_dir_entry* entry;
 dev_t devno;
-#define COUNT     3
 #define NAME      "var5"
-struct cdev *cdevp = NULL;
 #define  PROCFS_MAX_SIZE   256
 char proc_buffer[PROCFS_MAX_SIZE];
 char g_buffer[PROCFS_MAX_SIZE*10];
-
+static int major = 208;  
+static int minor = 0;
+static struct class *cls;
+static struct device *var5_device;
 int g_count = 0;
 int g_flag = 0;
 
@@ -132,33 +133,25 @@ static int __init proc_var5_init(void)
 	entry = proc_create("var5", 0444, NULL, &proc_fops);
 	printk(KERN_INFO "%s: proc file is created\n", THIS_MODULE->name);
 
-	ret = alloc_chrdev_region(&devno,BASEMINOR,COUNT,NAME);
-	if(ret < 0)
-	{
-		printk(KERN_ERR "alloc_chrdev_region failed...\n");
-		goto err1;
-	}
-	cdevp = cdev_alloc();
-	if(NULL == cdevp)
-	{
-		printk(KERN_ERR "cdev_alloc failed...\n");
-		ret = -ENOMEM;
-		goto err2;
-	}
-	cdev_init(cdevp,&fops);
-	ret = cdev_add(cdevp,devno,COUNT);
-	if(ret < 0)
-	{
-		printk(KERN_ERR "cdev_add failed...\n");
-		goto err2;
-	}
+	
+	devno = MKDEV(major, minor);
+	ret = register_chrdev(major, "var5", &fops);
 
-	printk(KERN_INFO "---%s---%s---%d---\n",__FILE__,__func__,__LINE__);
-	return 0;
-err2:
-	unregister_chrdev_region(devno, COUNT);
-err1:
-	return ret;
+	cls = class_create(THIS_MODULE, "var5");
+    if(IS_ERR(cls))
+    {
+        unregister_chrdev(major, "var5");
+        return -EBUSY;
+    }
+    var5_device = device_create(cls, NULL, devno, NULL, "var5");
+    if(IS_ERR(var5_device))
+    {
+        class_destroy(cls);
+        unregister_chrdev(major,"var5");
+        return -EBUSY;
+    }
+
+		
 
 	
 	return 0;
@@ -167,8 +160,9 @@ err1:
 static void __exit proc_var5_exit(void)
 {
 	proc_remove(entry);
-	cdev_del(cdevp);
-	unregister_chrdev_region(devno,COUNT);
+	device_destory(cls, devno);
+	class_destory(cls);
+	unregister_chrdev(major, "var5");
 	printk(KERN_INFO "%s: proc file is deleted\n", THIS_MODULE->name);
 }
 
