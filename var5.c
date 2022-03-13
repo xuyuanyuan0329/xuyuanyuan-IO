@@ -160,8 +160,8 @@ static int __init proc_var5_init(void)
 static void __exit proc_var5_exit(void)
 {
 	proc_remove(entry);
-	device_destory(cls, devno);
-	class_destory(cls);
+	device_destroy(cls, devno);
+	class_destroy(cls);
 	unregister_chrdev(major, "var5");
 	printk(KERN_INFO "%s: proc file is deleted\n", THIS_MODULE->name);
 }
