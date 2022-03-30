@@ -13,10 +13,7 @@ When writing a string to character device /dev/var5, count the number of letters
 1. Enter the source program directory
 2. execute make
 3. execute insmod var5.ko
-4. View device number: 
-	cat /proc/devices | grep var5 
-5. Create a device node in the /dev directory according to the device number
-    ls | grep var5  ===> var5 
+4. execute ls /dev/var5  ===> var5 
 
 ## Инструкция пользователя
 
